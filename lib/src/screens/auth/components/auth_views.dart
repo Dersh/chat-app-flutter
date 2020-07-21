@@ -2,15 +2,10 @@ import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/constants/gradients.dart';
 import 'package:chat_app/src/repo/repository.dart';
 import 'package:chat_app/src/repo/rocketChatRealTime.dart';
-import 'package:chat_app/src/screens/auth/model.dart';
 import 'package:chat_app/src/screens/chats/chats.dart';
-import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rocket_chat_dart/models/models.dart';
-import 'package:rocket_chat_dart/rest/client.dart';
 import 'package:ddp/ddp.dart';
 
 class AuthViews extends StatefulWidget {

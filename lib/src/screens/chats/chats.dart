@@ -5,11 +5,9 @@ import 'package:chat_app/src/screens/auth/components/auth_views.dart';
 import 'package:chat_app/src/screens/messages/messages.dart';
 import 'package:chat_app/src/screens/settings/settings.dart';
 import 'package:chat_app/src/screens/users/users.dart';
-import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:outline_material_icons/outline_material_icons.dart';
-import 'package:provider/provider.dart';
 import 'package:rocket_chat_dart/models/models.dart';
 
 class ChatListScreen extends StatelessWidget {

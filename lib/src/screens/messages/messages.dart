@@ -2,7 +2,6 @@ import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/repo/repository.dart';
 import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/material.dart';
-import 'package:outline_material_icons/outline_material_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:rocket_chat_dart/models/models.dart';
 

@@ -2,10 +2,8 @@ import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/constants/gradients.dart';
 import 'package:chat_app/src/screens/auth/components/auth_views.dart';
 import 'package:chat_app/src/screens/users/model.dart';
-import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class UserListScreen extends StatefulWidget {
   @override
@@ -131,8 +129,6 @@ class _UserListScreenState extends State<UserListScreen> {
   }
 
   Widget newChatMutationComponent() {
-    final appState = Provider.of<AppState>(context);
-
     return Text('not implemented');
 
 //    Mutation(
@@ -187,8 +183,6 @@ class _UserListScreenState extends State<UserListScreen> {
   }
 
   Widget queryComponent() {
-    final appState = Provider.of<AppState>(context);
-
     return Text('not implemented');
 //    Query(
 //      options: QueryOptions(
