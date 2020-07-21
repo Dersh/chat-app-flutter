@@ -1,14 +1,18 @@
 import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/repo/repository.dart';
+import 'package:chat_app/src/repo/rocketChatRealTime.dart';
+import 'package:chat_app/src/screens/messages/model.dart';
 import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rocket_chat_dart/models/models.dart';
+import 'package:rocket_chat_dart/realtime/client.dart';
 
 class MessageScreen extends StatelessWidget {
   final Channel chatDetails;
   final messageController = TextEditingController();
   VoidCallback _refetch;
+  List<MessageModel> _roomMessages = List<MessageModel>();
 
   MessageScreen({@required this.chatDetails});
 
@@ -102,43 +106,42 @@ class MessageScreen extends StatelessWidget {
     );
   }
 
-  Widget messageQueryComponent(context) {
-    final appState = Provider.of<AppState>(context);
+  UpdateEvent preloadMessages(String channelname) {
+    _roomMessages.clear();
+    Repository.client.channelsHistory(channelname, count: 100).then(
+        (messageList) => _roomMessages.addAll(
+            MessageListModel.fromMessage(channelname, messageList).messages));
 
-    return Text('not implemented');
-//    return Query(
-//      options: QueryOptions(
-//        documentNode: null,
-//        fetchPolicy: FetchPolicy.cacheAndNetwork,
-//        pollInterval: 3,
-//        variables: {'chatId': chatDetails.id},
-//        context: {
-//          'headers': <String, String>{
-//            'Authorization': 'Bearer ${appState.token}',
-//          },
-//        },
-//      ),
-//      builder: (result, {refetch, fetchMore}) {
-//        _refetch = refetch;
-//        if (result.data != null &&
-//            !result.loading &&
-//            result.data['getMessages'] != null) {
-//          var messages = MessageListModel.fromJson(
-//            result.data['getMessages']['chat'],
-//          );
-//          return messageListComponent(messages.messages);
-//        }
-//        return Expanded(child: Container());
-//      },
-//    );
+    return UpdateEvent();
   }
 
-  Future<Widget> messageListComponent(List<Message> messages) async {
-    final bool group =
-        (await Repository.client.channelMembers(roomId: chatDetails.id))
-                .length >
-            2;
+  Widget messageQueryComponent(context) {
+    return StreamBuilder(
+      stream: RocketChatRealTime.client.roomMessages(),
+      //initialData: preloadMessages("GENERAL"),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text("Error");
+        } else if (!snapshot.hasData) {
+          return Text("Loading");
+        }
 
+        if (snapshot.data.operation == "update") {
+          (snapshot.data.doc["args"] as List<dynamic>).forEach((element) =>
+              {_roomMessages.insert(0, MessageModel.fromJson(element))});
+        }
+        bool group = false;
+        Repository.client
+            .channelMembers(roomId: chatDetails.id)
+            .then((value) => group = value.length > 2);
+
+        return messageListComponent(_roomMessages, group) ??
+            Expanded(child: Container());
+      },
+    );
+  }
+
+  Widget messageListComponent(List<MessageModel> messages, bool group) {
     return Expanded(
       flex: 1,
       child: ListView.builder(
@@ -151,24 +154,21 @@ class MessageScreen extends StatelessWidget {
     );
   }
 
-  Widget messageItemComponent(Message message, context, bool group) {
-    final bool isMyMsg = (message.user.name == Repository.myUser);
-
-    double marginL = isMyMsg ? 25 : 15;
-    double marginR = isMyMsg ? 15 : 25;
+  Widget messageItemComponent(MessageModel message, context, bool group) {
+    double marginL = message.me ? 25 : 15;
+    double marginR = message.me ? 15 : 25;
     final mWidth = MediaQuery.of(context).size.width;
-    final width = message.msg.length > mWidth / 7 ? mWidth / 1.3 : null;
+    final width = message.text.length > mWidth / 7 ? mWidth / 1.3 : null;
 
     return Row(
-      mainAxisAlignment: (message.user.name == Repository.myUser)
-          ? MainAxisAlignment.end
-          : MainAxisAlignment.start,
+      mainAxisAlignment:
+          message.me ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         Container(
           margin: EdgeInsets.all(10),
           padding: EdgeInsets.fromLTRB(marginL, 10, marginR, 10),
           decoration: BoxDecoration(
-            color: isMyMsg ? PURPLE_COLOR : Colors.grey[200],
+            color: message.me ? PURPLE_COLOR : Colors.grey[200],
             borderRadius: BorderRadius.circular(10),
           ),
           child: Container(
@@ -176,17 +176,17 @@ class MessageScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                if (group && !isMyMsg) ...[
+                if (group && !message.me) ...[
                   Text(
-                    "${message.user.name}",
+                    "${message.sender.name}",
                     style: TextStyle(color: Colors.grey[800]),
                   ),
                   Container(margin: EdgeInsets.only(top: 5))
                 ],
                 Text(
-                  message.msg,
+                  message.text,
                   style: TextStyle(
-                    color: isMyMsg ? Colors.white : Colors.black,
+                    color: message.me ? Colors.white : Colors.black,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

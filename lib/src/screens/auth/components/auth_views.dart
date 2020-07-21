@@ -140,9 +140,6 @@ class _AuthViewsState extends State<AuthViews> {
                 channels.forEach((channel) {
                   RocketChatRealTime.client.subRoomMessages(channel.id);
                 });
-                RocketChatRealTime.client
-                    .roomMessages()
-                    .listen((data) => print(data.doc));
 
                 Navigator.pushReplacement(
                   context,
