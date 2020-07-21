@@ -1,15 +1,13 @@
 import 'package:chat_app/src/constants/colors.dart';
-import 'package:chat_app/src/screens/chats/model.dart';
-import 'package:chat_app/src/screens/messages/messages_gql.dart';
-import 'package:chat_app/src/screens/messages/model.dart';
+import 'package:chat_app/src/repo/repository.dart';
 import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/material.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:outline_material_icons/outline_material_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:rocket_chat_dart/models/models.dart';
 
 class MessageScreen extends StatelessWidget {
-  final ChatModel chatDetails;
+  final Channel chatDetails;
   final messageController = TextEditingController();
   VoidCallback _refetch;
 
@@ -83,38 +81,11 @@ class MessageScreen extends StatelessWidget {
                 width: 90,
                 height: 90,
                 padding: EdgeInsets.only(top: 15),
-                child: deleteChatMutationComponent(context))
+                child: null //deleteChatMutationComponent(context))
+                )
           ],
         ),
       ),
-    );
-  }
-
-  Widget deleteChatMutationComponent(context) {
-    final appState = Provider.of<AppState>(context);
-
-    return Mutation(
-      options: MutationOptions(
-        documentNode: gql(deleteChatMutation),
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          }
-        },
-        onCompleted: (result) {
-          Navigator.pop(context);
-        },
-      ),
-      builder: (runMutation, result) {
-        return PopupMenuButton(
-          onSelected: (val) {
-            if (val == "delete") runMutation({"chatId": chatDetails.id});
-          },
-          icon: Icon(Icons.more_horiz),
-          itemBuilder: (ctx) =>
-              [PopupMenuItem(child: Text("Delete Chat"), value: "delete")],
-        );
-      },
     );
   }
 
@@ -135,61 +106,70 @@ class MessageScreen extends StatelessWidget {
   Widget messageQueryComponent(context) {
     final appState = Provider.of<AppState>(context);
 
-    return Query(
-      options: QueryOptions(
-        documentNode: gql(getMessagesQuery),
-        fetchPolicy: FetchPolicy.cacheAndNetwork,
-        pollInterval: 3,
-        variables: {'chatId': chatDetails.id},
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-      ),
-      builder: (result, {refetch, fetchMore}) {
-        _refetch = refetch;
-        if (result.data != null &&
-            !result.loading &&
-            result.data['getMessages'] != null) {
-          var messages = MessageListModel.fromJson(
-            result.data['getMessages']['chat'],
-          );
-          return messageListComponent(messages.messages);
-        }
-        return Expanded(child: Container());
-      },
-    );
+    return Text('not implemented');
+//    return Query(
+//      options: QueryOptions(
+//        documentNode: null,
+//        fetchPolicy: FetchPolicy.cacheAndNetwork,
+//        pollInterval: 3,
+//        variables: {'chatId': chatDetails.id},
+//        context: {
+//          'headers': <String, String>{
+//            'Authorization': 'Bearer ${appState.token}',
+//          },
+//        },
+//      ),
+//      builder: (result, {refetch, fetchMore}) {
+//        _refetch = refetch;
+//        if (result.data != null &&
+//            !result.loading &&
+//            result.data['getMessages'] != null) {
+//          var messages = MessageListModel.fromJson(
+//            result.data['getMessages']['chat'],
+//          );
+//          return messageListComponent(messages.messages);
+//        }
+//        return Expanded(child: Container());
+//      },
+//    );
   }
 
-  Widget messageListComponent(List<MessageModel> messages) {
+  Future<Widget> messageListComponent(List<Message> messages) async {
+    final bool group =
+        (await Repository.client.channelMembers(roomId: chatDetails.id))
+                .length >
+            2;
+
     return Expanded(
       flex: 1,
       child: ListView.builder(
         itemCount: messages.length,
         reverse: true,
         physics: BouncingScrollPhysics(),
-        itemBuilder: (context, i) => messageItemComponent(messages[i], context),
+        itemBuilder: (context, i) =>
+            messageItemComponent(messages[i], context, group),
       ),
     );
   }
 
-  Widget messageItemComponent(MessageModel message, context) {
-    final group = chatDetails.members.length > 2;
-    double marginL = message.me ? 25 : 15;
-    double marginR = message.me ? 15 : 25;
+  Widget messageItemComponent(Message message, context, bool group) {
+    final bool isMyMsg = (message.user.name == Repository.myUser);
+
+    double marginL = isMyMsg ? 25 : 15;
+    double marginR = isMyMsg ? 15 : 25;
     final mWidth = MediaQuery.of(context).size.width;
-    final width = message.text.length > mWidth / 7 ? mWidth / 1.3 : null;
+    final width = message.msg.length > mWidth / 7 ? mWidth / 1.3 : null;
 
     return Row(
-      mainAxisAlignment:
-          message.me ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: (message.user.name == Repository.myUser)
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       children: [
         Container(
           margin: EdgeInsets.all(10),
           padding: EdgeInsets.fromLTRB(marginL, 10, marginR, 10),
           decoration: BoxDecoration(
-            color: message.me ? PURPLE_COLOR : Colors.grey[200],
+            color: isMyMsg ? PURPLE_COLOR : Colors.grey[200],
             borderRadius: BorderRadius.circular(10),
           ),
           child: Container(
@@ -197,17 +177,17 @@ class MessageScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                if (group && !message.me) ...[
+                if (group && !isMyMsg) ...[
                   Text(
-                    "${message.sender.name}",
+                    "${message.user.name}",
                     style: TextStyle(color: Colors.grey[800]),
                   ),
                   Container(margin: EdgeInsets.only(top: 5))
                 ],
                 Text(
-                  message.text,
+                  message.msg,
                   style: TextStyle(
-                    color: message.me ? Colors.white : Colors.black,
+                    color: isMyMsg ? Colors.white : Colors.black,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -246,49 +226,31 @@ class MessageScreen extends StatelessWidget {
               ),
             ),
           ),
-          createMessageMutationComponent(context)
+          //createMessageMutationComponent(context)
         ],
       ),
     );
   }
 
-  Widget createMessageMutationComponent(context) {
-    final appState = Provider.of<AppState>(context);
-
-    return Mutation(
-      builder: (runMutation, result) => sendButton(runMutation, result),
-      options: MutationOptions(
-        documentNode: gql(createMessageMutation),
-        onCompleted: (result) {
-          _refetch();
-        },
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-      ),
-    );
-  }
-
-  Widget sendButton(RunMutation runMutation, QueryResult result) {
-    return result.loading
-        ? Container(
-            width: 25,
-            height: 25,
-            margin: EdgeInsets.only(right: 15),
-            child: CircularProgressIndicator(
-              backgroundColor: PURPLE_COLOR,
-            ))
-        : IconButton(
-            color: PURPLE_COLOR,
-            icon: Icon(OMIcons.send),
-            onPressed: () {
-              var text = messageController.text.trim();
-              if (text != '')
-                runMutation({'chatId': chatDetails.id, 'text': text});
-              messageController.clear();
-            },
-          );
+  Widget sendButton() {
+    return Text('not implemented');
+//      result.loading
+//        ? Container(
+//            width: 25,
+//            height: 25,
+//            margin: EdgeInsets.only(right: 15),
+//            child: CircularProgressIndicator(
+//              backgroundColor: PURPLE_COLOR,
+//            ))
+//        : IconButton(
+//            color: PURPLE_COLOR,
+//            icon: Icon(OMIcons.send),
+//            onPressed: () {
+//              var text = messageController.text.trim();
+//              if (text != '')
+//                runMutation({'chatId': chatDetails.id, 'text': text});
+//              messageController.clear();
+//            },
+//          );
   }
 }

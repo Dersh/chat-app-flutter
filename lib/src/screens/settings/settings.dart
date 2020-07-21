@@ -2,10 +2,8 @@ import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/constants/gradients.dart';
 import 'package:chat_app/src/screens/about/about.dart';
 import 'package:chat_app/src/screens/auth/auth.dart';
-import 'package:chat_app/src/screens/settings/settings_gql.dart';
 import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/material.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -75,36 +73,38 @@ class SettingScreen extends StatelessWidget {
   }
 
   Widget meQueryComponent(context, appState) {
-    return Query(
-      options: QueryOptions(
-        pollInterval: 5,
-        documentNode: gql(meQuery),
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-      ),
-      builder: (res, {refetch, fetchMore}) {
-        var data = {};
-        if (res.data != null) data = res.data["me"] ?? {};
-        return renameMutationComponent(context, data, appState);
-      },
-    );
+    return Text('not implemented');
+//    Query(
+//      options: QueryOptions(
+//        pollInterval: 5,
+//        documentNode: gql(meQuery),
+//        context: {
+//          'headers': <String, String>{
+//            'Authorization': 'Bearer ${appState.token}',
+//          },
+//        },
+//      ),
+//      builder: (res, {refetch, fetchMore}) {
+//        var data = {};
+//        if (res.data != null) data = res.data["me"] ?? {};
+//        return renameMutationComponent(context, data, appState);
+//      },
+//    );
   }
 
   Widget renameMutationComponent(context, Map name, appState) {
-    return Mutation(
-      options: MutationOptions(
-        documentNode: gql(renameUserMutation),
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-      ),
-      builder: (run, res) => displayNameComponent(context, run, name),
-    );
+    return Text('not implemented');
+//    Mutation(
+//      options: MutationOptions(
+//        documentNode: gql(renameUserMutation),
+//        context: {
+//          'headers': <String, String>{
+//            'Authorization': 'Bearer ${appState.token}',
+//          },
+//        },
+//      ),
+//      builder: (run, res) => displayNameComponent(context, run, name),
+//    );
   }
 
   Widget displayNameComponent(context, runMutation, name) {
@@ -112,7 +112,7 @@ class SettingScreen extends StatelessWidget {
       title: "Change your display name",
       info: "Your name is set to '${name['name'] ?? ""}'",
       color: Color(0xFFDE6614),
-      onPressed: () => displayDialog(context, runMutation, rename: true),
+      onPressed: () => displayDialog(context, /*runMutation, */ rename: true),
     );
   }
 
@@ -142,24 +142,25 @@ class SettingScreen extends StatelessWidget {
   }
 
   Widget deleteUserMutationComponent(context, appState) {
-    return Mutation(
-      options: MutationOptions(
-        documentNode: gql(deleteUserMutation),
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-        onCompleted: (result) async {
-          if (result != null) {
-            await resetApp(appState, context);
-          }
-        },
-      ),
-      builder: (runMutation, result) {
-        return deleteItemComponent(context, runMutation);
-      },
-    );
+    return Text('not implemented');
+//    Mutation(
+//      options: MutationOptions(
+//        documentNode: gql(deleteUserMutation),
+//        context: {
+//          'headers': <String, String>{
+//            'Authorization': 'Bearer ${appState.token}',
+//          },
+//        },
+//        onCompleted: (result) async {
+//          if (result != null) {
+//            await resetApp(appState, context);
+//          }
+//        },
+//      ),
+//      builder: (runMutation, result) {
+//        return deleteItemComponent(context, runMutation);
+//      },
+//    );
   }
 
   Future<void> resetApp(appState, context) async {
@@ -171,12 +172,17 @@ class SettingScreen extends StatelessWidget {
         MaterialPageRoute(builder: (context) => AuthScreen()), (val) => false);
   }
 
-  Widget deleteItemComponent(context, RunMutation runMutation) {
+  Widget deleteItemComponent(
+    context,
+    /*RunMutation runMutation*/
+  ) {
     return settingsItemComponent(
       title: "Delete Account",
       info: "Delete your account permanently",
       color: Colors.redAccent[700],
-      onPressed: () => displayDialog(context, runMutation),
+      onPressed: () => displayDialog(
+        context, /*runMutation*/
+      ),
     );
   }
 
@@ -221,7 +227,8 @@ class SettingScreen extends StatelessWidget {
 
   displayDialog(
     BuildContext context,
-    RunMutation runMutation, {
+//    RunMutation runMutation,
+    {
     bool rename = false,
   }) async {
     return showDialog(
@@ -264,7 +271,7 @@ class SettingScreen extends StatelessWidget {
                     child: Text("OK"),
                     onPressed: () {
                       final name = inputController.text;
-                      if (name != "" || !rename) runMutation({"name": name});
+                      //if (name != "" || !rename) runMutation({"name": name});
                       Navigator.pop(context);
                     },
                   )

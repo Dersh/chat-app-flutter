@@ -1,15 +1,17 @@
 import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/constants/gradients.dart';
-import 'package:chat_app/src/screens/auth/auth_gql.dart';
+import 'package:chat_app/src/repo/repository.dart';
+import 'package:chat_app/src/repo/rocketChatRealTime.dart';
 import 'package:chat_app/src/screens/auth/model.dart';
 import 'package:chat_app/src/screens/chats/chats.dart';
 import 'package:chat_app/src/state/app_state.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rocket_chat_dart/models/models.dart';
+import 'package:rocket_chat_dart/rest/client.dart';
+import 'package:ddp/ddp.dart';
 
 class AuthViews extends StatefulWidget {
   final bool signup;
@@ -23,19 +25,9 @@ class _AuthViewsState extends State<AuthViews> {
   String fcmToken = "";
   String errorText = "";
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
-
   @override
   void initState() {
     super.initState();
-    getToken();
-  }
-
-  Future<void> getToken() async {
-    final token = await _firebaseMessaging.getToken();
-    setState(() {
-      fcmToken = token;
-    });
   }
 
   @override
@@ -53,7 +45,7 @@ class _AuthViewsState extends State<AuthViews> {
         messageTextComponent(),
         Container(margin: EdgeInsets.only(top: 35)),
         if (widget.signup) ...nameInputComponent(),
-        textFieldComponent(type: "email", hintText: "Email Address"),
+        textFieldComponent(type: "name", hintText: "Name"),
         Container(margin: EdgeInsets.only(top: 20)),
         textFieldComponent(
           type: "password",
@@ -63,7 +55,7 @@ class _AuthViewsState extends State<AuthViews> {
         Container(margin: EdgeInsets.only(top: 10)),
         errorMessageComponent(),
         Container(margin: EdgeInsets.only(top: widget.signup ? 30 : 120)),
-        mutationComponent(context),
+        gradientButtonComponent(),
       ],
     );
   }
@@ -128,25 +120,38 @@ class _AuthViewsState extends State<AuthViews> {
     );
   }
 
-  Widget mutationComponent(context) {
-    final appState = Provider.of<AppState>(context);
+  Widget gradientButtonComponent() {
+    return GestureDetector(
+      onTap: () {
+        String email = inputValues["name"] ?? "";
+        String pass = inputValues["password"] ?? "";
+        String name = inputValues["name"] ?? "";
+        if (email != "" && pass != "") {
+          if (!widget.signup || name != "") {
+            RocketChatRealTime.client.addStatusListener((status) async {
+              if (status == ConnectStatus.connected) {
+                await Repository.client.login(UserCredentials()
+                  ..name = name
+                  ..password = pass);
 
-    return Mutation(
-      builder: (run, result) => gradientButtonComponent(run, result),
-      options: MutationOptions(
-        update: (Cache cache, QueryResult result) => cache,
-        documentNode: gql(widget.signup ? signupMutation : signinMutation),
-        onCompleted: (result) async {
-          final response = AuthModel.fromJson(
-            result[widget.signup ? 'register' : 'login'],
-          );
+                Repository.myUser = name;
 
-          if (response.error == null && response.token != null) {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            await prefs.setString("uid", response.id);
-            await prefs.setString("token", response.token);
+                await RocketChatRealTime.client.login(UserCredentials()
+                  ..name = name
+                  ..password = pass);
 
-            appState.setToken(response.token);
+                final channels =
+                    await RocketChatRealTime.client.getChannelsIn();
+                channels.forEach((channel) {
+                  RocketChatRealTime.client.subRoomMessages(channel.id);
+                });
+                RocketChatRealTime.client
+                    .roomMessages()
+                    .listen((data) => print(data.doc));
+              }
+            });
+
+            //appState.setToken(response.token);
 
             Navigator.pushReplacement(
               context,
@@ -154,31 +159,6 @@ class _AuthViewsState extends State<AuthViews> {
                 builder: (context) => ChatListScreen(),
               ),
             );
-          }
-          if (response.error != null) {
-            setState(() {
-              errorText = response.error.message ?? "";
-            });
-          }
-        },
-      ),
-    );
-  }
-
-  Widget gradientButtonComponent(RunMutation runMutation, QueryResult result) {
-    return GestureDetector(
-      onTap: () {
-        String email = inputValues["email"] ?? "";
-        String pass = inputValues["password"] ?? "";
-        String name = inputValues["name"] ?? "";
-        if (email != "" && pass != "") {
-          if (!widget.signup || name != "") {
-            runMutation({
-              "email": email,
-              "password": pass,
-              "name": name,
-              "fcmToken": fcmToken
-            });
           }
         }
       },
@@ -198,7 +178,7 @@ class _AuthViewsState extends State<AuthViews> {
           ],
         ),
         child: Center(
-          child: result.loading
+          child: false //result.loading
               ? CupertinoActivityIndicator()
               : Text(
                   "CONTINUE",

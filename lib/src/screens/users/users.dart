@@ -2,11 +2,9 @@ import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/constants/gradients.dart';
 import 'package:chat_app/src/screens/auth/components/auth_views.dart';
 import 'package:chat_app/src/screens/users/model.dart';
-import 'package:chat_app/src/screens/users/users_gql.dart';
 import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:provider/provider.dart';
 
 class UserListScreen extends StatefulWidget {
@@ -135,33 +133,35 @@ class _UserListScreenState extends State<UserListScreen> {
   Widget newChatMutationComponent() {
     final appState = Provider.of<AppState>(context);
 
-    return Mutation(
-      options: MutationOptions(
-        documentNode: gql(createChatMutation),
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-        update: (Cache cache, QueryResult result) => cache,
-        onCompleted: (result) {
-          Navigator.pop(context);
-        },
-      ),
-      builder: (runMutation, result) {
-        return flatButtonComponent(
-          "START CHAT",
-          selectionList.length == 0
-              ? null
-              : () {
-                  if (selectionList.length == 1 || groupName != '')
-                    runMutation(
-                        {'membersId': selectionList, 'name': groupName});
-                },
-          primary: true,
-        );
-      },
-    );
+    return Text('not implemented');
+
+//    Mutation(
+//      options: MutationOptions(
+//        documentNode: gql(createChatMutation),
+//        context: {
+//          'headers': <String, String>{
+//            'Authorization': 'Bearer ${appState.token}',
+//          },
+//        },
+//        update: (Cache cache, QueryResult result) => cache,
+//        onCompleted: (result) {
+//          Navigator.pop(context);
+//        },
+//      ),
+//      builder: (runMutation, result) {
+//        return flatButtonComponent(
+//          "START CHAT",
+//          selectionList.length == 0
+//              ? null
+//              : () {
+//                  if (selectionList.length == 1 || groupName != '')
+//                    runMutation(
+//                        {'membersId': selectionList, 'name': groupName});
+//                },
+//          primary: true,
+//        );
+//      },
+//    );
   }
 
   Widget searchBarComponent() {
@@ -189,25 +189,26 @@ class _UserListScreenState extends State<UserListScreen> {
   Widget queryComponent() {
     final appState = Provider.of<AppState>(context);
 
-    return Query(
-      options: QueryOptions(
-        documentNode: gql(getUserQuery),
-        pollInterval: 10,
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-      ),
-      builder: (result, {refetch, fetchMore}) {
-        if (result.data != null && !result.loading) {
-          List<dynamic> userData = result.data['getUsers']['users'];
-          var users = UsersModel.fromJson(userData);
-          return userListComponent(users);
-        }
-        return Container();
-      },
-    );
+    return Text('not implemented');
+//    Query(
+//      options: QueryOptions(
+//        documentNode: gql(getUserQuery),
+//        pollInterval: 10,
+//        context: {
+//          'headers': <String, String>{
+//            'Authorization': 'Bearer ${appState.token}',
+//          },
+//        },
+//      ),
+//      builder: (result, {refetch, fetchMore}) {
+//        if (result.data != null && !result.loading) {
+//          List<dynamic> userData = result.data['getUsers']['users'];
+//          var users = UsersModel.fromJson(userData);
+//          return userListComponent(users);
+//        }
+//        return Container();
+//      },
+//    );
   }
 
   Widget userListComponent(UsersModel list) {

@@ -1,17 +1,16 @@
 import 'package:chat_app/src/constants/colors.dart';
 import 'package:chat_app/src/constants/gradients.dart';
+import 'package:chat_app/src/repo/repository.dart';
 import 'package:chat_app/src/screens/auth/components/auth_views.dart';
-import 'package:chat_app/src/screens/chats/chats_gql.dart';
-import 'package:chat_app/src/screens/chats/model.dart';
 import 'package:chat_app/src/screens/messages/messages.dart';
 import 'package:chat_app/src/screens/settings/settings.dart';
 import 'package:chat_app/src/screens/users/users.dart';
 import 'package:chat_app/src/state/app_state.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:outline_material_icons/outline_material_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:rocket_chat_dart/models/models.dart';
 
 class ChatListScreen extends StatelessWidget {
   @override
@@ -52,34 +51,25 @@ class ChatListScreen extends StatelessWidget {
   }
 
   Widget chatQueryComponent(context) {
-    final appState = Provider.of<AppState>(context);
+    //final appState = Provider.of<AppState>(context);
 
-    return Query(
-      options: QueryOptions(
-        documentNode: gql(getChatsQuery),
-        fetchPolicy: FetchPolicy.cacheAndNetwork,
-        pollInterval: 15,
-        context: {
-          'headers': <String, String>{
-            'Authorization': 'Bearer ${appState.token}',
-          },
-        },
-      ),
-      builder: (result, {refetch, fetchMore}) {
-        if (result.loading) return Center(child: CupertinoActivityIndicator());
-        if (result.hasException)
+    return FutureBuilder(
+      future: Repository.client.getPublicChannels(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.none) {
+          return Center(child: CupertinoActivityIndicator());
+        }
+        if (snapshot.hasError)
           return Center(child: Text("Oops something went wrong"));
-
-        if (result.data != null && result.data['getChats'] != null) {
-          var chatList = ChatListModel.fromJson(result.data['getChats']);
-          return chatListComponent(chatList.chats ?? []);
+        if (snapshot.hasData) {
+          return chatListComponent(snapshot.data ?? []);
         }
         return Container();
       },
     );
   }
 
-  Widget chatListComponent(List<ChatModel> chats) {
+  Widget chatListComponent(List<Channel> chats) {
     return ListView.separated(
       separatorBuilder: (context, index) => Divider(indent: 60, height: 0),
       physics: BouncingScrollPhysics(),
@@ -89,7 +79,7 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 
-  Widget chatItem(context, ChatModel chat) {
+  Widget chatItem(context, Channel chat) {
     return InkWell(
       splashColor: ORANGE_SHADOW,
       highlightColor: WHITE_COLOR.withOpacity(.5),
