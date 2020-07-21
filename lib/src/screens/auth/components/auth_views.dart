@@ -143,17 +143,15 @@ class _AuthViewsState extends State<AuthViews> {
                 RocketChatRealTime.client
                     .roomMessages()
                     .listen((data) => print(data.doc));
+
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatListScreen(),
+                  ),
+                );
               }
             });
-
-            //appState.setToken(response.token);
-
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatListScreen(),
-              ),
-            );
           }
         }
       },
