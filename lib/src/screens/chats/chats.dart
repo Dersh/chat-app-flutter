@@ -106,7 +106,7 @@ class ChatListScreen extends StatelessWidget {
                   ),
                   Container(margin: EdgeInsets.only(top: 5)),
                   Text(
-                    chat.lastMessage ?? '',
+                    chat.lastMessage?.msg ?? '',
                     maxLines: 1,
                     style: TextStyle(
                       fontFamily: 'Roboto',
